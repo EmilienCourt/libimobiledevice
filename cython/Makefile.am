@@ -38,6 +38,7 @@ PXIINCLUDES = \
 	webinspector.pxi \
 	heartbeat.pxi \
 	diagnostics_relay.pxi \
+	mcinstall.pxi \
 	misagent.pxi \
 	house_arrest.pxi \
 	restore.pxi \
