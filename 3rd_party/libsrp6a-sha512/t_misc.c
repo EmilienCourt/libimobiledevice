@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <process.h>
 #include <io.h>
 #endif
@@ -77,11 +77,15 @@ SHA1_CTX randctxt;
  * tricks with variable ordering and sometimes define quirky
  * environment variables like $WINDOWID or $_.
  */
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
 extern char ** environ;
+#endif
 
 static void
-t_envhash(out)
-     unsigned char * out;
+t_envhash(unsigned char * out)
 {
   char ** ptr;
   char ebuf[256];
@@ -115,8 +119,7 @@ t_envhash(out)
  * The entire buffer is run once through SHA to obtain the final result.
  */
 static void
-t_fshash(out)
-     unsigned char * out;
+t_fshash(unsigned char * out)
 {
   char dotpath[128];
   struct stat st;
@@ -209,7 +212,7 @@ t_initrand()
 #if defined(OPENSSL)	/* OpenSSL has nifty win32 entropy-gathering code */
 #if OPENSSL_VERSION_NUMBER >= 0x00905100
   r = RAND_status();
-#if defined(WINDOWS) || defined(WIN32)
+#if defined(WINDOWS) || defined(_WIN32)
   if(r)		/* Don't do the Unix-y stuff on Windows if possible */
     return;
 #else
@@ -222,7 +225,7 @@ t_initrand()
   if(r > 0) {
     yarrow_add_entropy(entropy, r, &g_rng);
     memset(entropy, 0, sizeof(entropy));
-# if defined(WINDOWS) || defined(WIN32)
+# if defined(WINDOWS) || defined(_WIN32)
     /* Don't do the Unix-y stuff on Windows if possible */
     yarrow_ready(&g_rng);
     return;
@@ -230,13 +233,13 @@ t_initrand()
   }
 #endif
 
-#if !defined(WINDOWS) && !defined(WIN32)
+#if !defined(WINDOWS) && !defined(_WIN32)
   i = open("/dev/urandom", O_RDONLY);
   if(i > 0) {
     r += read(i, preseed.devrand, sizeof(preseed.devrand));
     close(i);
   }
-#endif /* !WINDOWS && !WIN32 */
+#endif /* !WINDOWS && !_WIN32 */
 
   /* Resort to truerand only if desperate for some Real entropy */
   if(r == 0)
@@ -252,7 +255,7 @@ t_initrand()
   preseed.subsec = t.tv_usec;
 #endif
   preseed.pid = getpid();
-#ifndef WIN32
+#ifndef _WIN32
   preseed.ppid = getppid();
 #endif
   t_envhash(preseed.envh);
@@ -317,9 +320,7 @@ t_stronginitrand()
  * Each cycle generates 20 bytes of new output.
  */
 _TYPE( void )
-t_random(data, size)
-     unsigned char * data;
-     unsigned size;
+t_random(unsigned char * data, unsigned size)
 {
   if(!initialized)
     t_initrand();
@@ -369,10 +370,7 @@ t_random(data, size)
  * single 320-bit value.
  */
 _TYPE( unsigned char * )
-t_sessionkey(key, sk, sklen)
-     unsigned char * key;
-     unsigned char * sk;
-     unsigned sklen;
+t_sessionkey(unsigned char * key, unsigned char * sk, unsigned sklen)
 {
   unsigned i, klen;
   unsigned char * hbuf;
@@ -411,11 +409,7 @@ t_sessionkey(key, sk, sklen)
 }
 
 _TYPE( void )
-t_mgf1(mask, masklen, seed, seedlen)
-     unsigned char * mask;
-     unsigned masklen;
-     const unsigned char * seed;
-     unsigned seedlen;
+t_mgf1(unsigned char * mask, unsigned masklen, const unsigned char * seed, unsigned seedlen)
 {
   SHA1_CTX ctxt;
   unsigned i = 0;

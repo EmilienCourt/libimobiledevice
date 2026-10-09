@@ -37,20 +37,20 @@
 #include <mbedtls/ctr_drbg.h>
 #endif
 
-#ifdef WIN32
-#define LIBIMOBILEDEVICE_API __declspec( dllexport )
+#ifdef LIBIMOBILEDEVICE_STATIC
+  #define LIBIMOBILEDEVICE_API
+#elif defined(_WIN32)
+  #define LIBIMOBILEDEVICE_API __declspec( dllexport )
 #else
-#ifdef HAVE_FVISIBILITY
-#define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
-#else
-#define LIBIMOBILEDEVICE_API
-#endif
+  #if __GNUC__ >= 4
+    #define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
+  #else
+    #define LIBIMOBILEDEVICE_API
+  #endif
 #endif
 
 #include "common/userpref.h"
 #include "libimobiledevice/libimobiledevice.h"
-
-#define DEVICE_VERSION(maj, min, patch) (((maj & 0xFF) << 16) | ((min & 0xFF) << 8) | (patch & 0xFF))
 
 #define DEVICE_CLASS_IPHONE  1
 #define DEVICE_CLASS_IPAD    2
